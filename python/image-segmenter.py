@@ -46,29 +46,33 @@ def segment(filename):
 
     segments = []
 
+    print("Finding segments")
     # Find segments
-    for y in range(height):
-        for x in range(width):
-            pixel = im.getpixel((x, y))
-            if pixel[0] == 255 and pixel[1] == 255 and pixel[2] == 255:
-                pass
+    for (index, pixel) in enumerate(im.getdata()):
+        x = index % width
+        y = index // width
+        if min(pixel) == 255:
+            pass
+        else:
+            p = Point(x, y)
+            candidates = {p.offset(-1, -1), p.offset(-1, 0), p.offset(0, -1), p.offset(1, -1)}
+            matchingSets = []
+            for segment in segments:
+                if len(segment.intersection(candidates)) > 0:
+                    matchingSets.append(segment)
+            if len(matchingSets) > 1:
+                unionSet = set()
+                for matchingSet in matchingSets:
+                    segments.remove(matchingSet)
+                    unionSet |= matchingSet
+                unionSet.add(p)
+                segments.append(unionSet)
+            elif len(matchingSets) == 1:
+                matchingSets[0].add(p)
             else:
-                p = Point(x, y)
-                candidates = {p.offset(-1, -1), p.offset(-1, 0), p.offset(0, -1), p.offset(1, -1)}
-                matchingSets = []
-                for segment in segments:
-                    if len(segment.intersection(candidates)) > 0:
-                        matchingSets.append(segment)
-                if len(matchingSets) > 0:
-                    unionSet = set()
-                    for matchingSet in matchingSets:
-                        segments.remove(matchingSet)
-                        unionSet |= matchingSet
-                    unionSet.add(p)
-                    segments.append(unionSet)
-                else:
-                    segments.append({p})
+                segments.append({p})
 
+    print("Starting copies")
     # Copy
     results = []
     for segment in segments:
@@ -103,7 +107,7 @@ def segment(filename):
         maxY -= 1
         outWidth = maxX - minX + 1
         outHeight = maxY - minY + 1
-        if outWidth < 25:
+        if outHeight < 25:
             #print("Skipping small image sized {} x {}".format(outWidth, outHeight))
             continue
         segmentImage = im.crop((minX, minY, maxX + 1, maxY + 1))
