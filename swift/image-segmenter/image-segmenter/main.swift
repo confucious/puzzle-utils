@@ -9,11 +9,19 @@ import Foundation
 import ArgumentParser
 import SwiftImage
 
-struct Point: Hashable, Equatable {
-    var x, y: Int
+typealias Point = Int
+
+extension Point {
     init(_ x: Int, _ y: Int) {
-        self.x = x
-        self.y = y
+        self = x + 10000 + y * 100_000_000
+    }
+
+    var x: Int {
+        self % 100_000_000 - 10_000
+    }
+
+    var y: Int {
+        self / 100_000_000
     }
 
     func offset(_ deltaX: Int, _ deltaY: Int) -> Point {
@@ -36,7 +44,7 @@ struct Segment: ParsableCommand {
             fatalError("Could not load image \(filename)")
         }
 
-        var segments = Set<Set<Point>>()
+        var segments = Set<IndexSet>()
 
         for y in 0..<image.height {
             for x in 0..<image.width {
@@ -44,21 +52,23 @@ struct Segment: ParsableCommand {
                     continue
                 }
                 let point = Point(x, y)
-                let candidates = [
+                let candidates = IndexSet([
                     point.offset(-1, -1),
                     point.offset(-1, 0),
                     point.offset(0, -1),
                     point.offset(1, -1)
-                ]
-                var matchingSets = Array<Set<Point>>()
+                ])
+                var matchingSets = Array<IndexSet>()
                 for segment in segments {
-                    if !segment.intersection(candidates).isEmpty {
+                    if candidates.first(where: { (candidate) -> Bool in
+                        segment.contains(candidate)
+                    }) != nil {
                         matchingSets.append(segment)
                     }
                 }
                 if matchingSets.count > 1 {
                     segments.subtract(matchingSets)
-                    var union = matchingSets.reduce(into: Set<Point>()) { (union, nextSet) in
+                    var union = matchingSets.reduce(into: IndexSet()) { (union, nextSet) in
                         union.formUnion(nextSet)
                     }
                     union.insert(point)
@@ -77,20 +87,26 @@ struct Segment: ParsableCommand {
         var results = Array<Image<FullColor>>()
         for segment in segments {
             let point = segment.first!
-            var minPoint = point
-            var maxPoint = point
+            var minPointX = point.x
+            var minPointY = point.y
+            var maxPointX = point.x
+            var maxPointY = point.y
             for point in segment {
-                minPoint.x = min(minPoint.x, point.x)
-                minPoint.y = min(minPoint.y, point.y)
-                maxPoint.x = max(maxPoint.x, point.x)
-                maxPoint.y = max(maxPoint.y, point.y)
+                minPointX = min(minPointX, point.x)
+                minPointY = min(minPointY, point.y)
+                maxPointX = max(maxPointX, point.x)
+                maxPointY = max(maxPointY, point.y)
             }
+            let minPoint = Point(minPointX, minPointY)
+            let maxPoint = Point(maxPointX, maxPointY)
             let floodMin = minPoint.offset(-1, -1)
             let floodMax = maxPoint.offset(1, 1)
-            var outside: Set<Point> = [floodMin]
+            var outside: IndexSet = [floodMin]
             var seen = outside
             var active = outside
-            while let current = active.popFirst() {
+            while !active.isEmpty {
+                let current = active[active.startIndex]
+                active.remove(current)
                 let candidates = [
                     current.offset(-1, 0),
                     current.offset(0, -1),
@@ -110,8 +126,8 @@ struct Segment: ParsableCommand {
                     seen.insert(candidate)
                 }
             }
-            let outWidth = maxPoint.x - minPoint.x + 1
-            let outHeight = maxPoint.y - minPoint.y + 1
+            let outWidth = maxPointX - minPointX + 1
+            let outHeight = maxPointY - minPointY + 1
             if outHeight < 25 || outWidth < 25 {
                 continue
             }
