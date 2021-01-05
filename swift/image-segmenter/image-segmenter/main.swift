@@ -52,12 +52,12 @@ struct Segment: ParsableCommand {
                     continue
                 }
                 let point = Point(x, y)
-                let candidates = IndexSet([
-                    point.offset(-1, -1),
+                let candidates = [
                     point.offset(-1, 0),
                     point.offset(0, -1),
+                    point.offset(-1, -1),
                     point.offset(1, -1)
-                ])
+                ]
                 var matchingSets = Array<IndexSet>()
                 for segment in segments {
                     if candidates.first(where: { (candidate) -> Bool in
