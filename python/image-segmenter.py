@@ -132,4 +132,4 @@ for arg in sys.argv[1:]:
         results.extend(segment(filename))
 
 for (index, image) in enumerate(results):
-    image.save("out-{}.png".format(index))
+    image.save("out-{}.png".format(index + 1))
