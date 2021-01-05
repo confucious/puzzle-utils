@@ -36,6 +36,12 @@ struct Segment: ParsableCommand {
         abstract: "Utility to find and extract sub-images from image files.",
         version: "0.0.0")
 
+    @Option(help: "Minimum height or width.")
+    var threshold: Int = 25
+
+    @Option(help: "Prefix for generated image files.")
+    var prefix: String = "out"
+
     @Argument(help: "Input image files")
     var filenames: [String]
 
@@ -128,7 +134,7 @@ struct Segment: ParsableCommand {
             }
             let outWidth = maxPointX - minPointX + 1
             let outHeight = maxPointY - minPointY + 1
-            if outHeight < 25 || outWidth < 25 {
+            if outHeight < threshold || outWidth < threshold {
                 continue
             }
             var out = Image<FullColor>(width: outWidth, height: outHeight, pixel: .clear)
@@ -149,7 +155,7 @@ struct Segment: ParsableCommand {
         print(filenames)
         let images = filenames.flatMap { segment(filename: $0) }
         images.enumerated().forEach { (index, image) in
-            try! image.write(toFile: "out-\(index + 1).png", atomically: false, format: .png)
+            try! image.write(toFile: "\(prefix)-\(index + 1).png", atomically: false, format: .png)
         }
     }
 }
