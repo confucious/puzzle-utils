@@ -149,7 +149,7 @@ struct Segment: ParsableCommand {
         print(filenames)
         let images = filenames.flatMap { segment(filename: $0) }
         images.enumerated().forEach { (index, image) in
-            try! image.write(toFile: "out-\(index).png", atomically: false, format: .png)
+            try! image.write(toFile: "out-\(index + 1).png", atomically: false, format: .png)
         }
     }
 }
